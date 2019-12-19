@@ -8,6 +8,8 @@ import (
 )
 
 var (
+	Timeout    int
+	Trace      bool
 	configData []map[string]map[string]string
 )
 
@@ -42,21 +44,12 @@ func GetConfigInt(section string, key string) int {
 	return n
 }
 
-func GetConfigInt64(section string, key string) int64 {
+func GetConfigBool(section string, key string) bool {
 	v := GetConfig(section, key)
 	if v == "" {
-		return 0
+		return false
 	}
-	n, _ := strconv.ParseInt(v, 10, 64)
-	return n
-}
-
-func GetConfigFloat64(section string, key string) float64 {
-	v := GetConfig(section, key)
-	if v == "" {
-		return 0
-	}
-	n, _ := strconv.ParseFloat(v, 64)
+	n, _ := strconv.ParseBool(v)
 	return n
 }
 
@@ -68,4 +61,3 @@ func GetSection(section string) map[string]string {
 	}
 	return nil
 }
-

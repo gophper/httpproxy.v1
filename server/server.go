@@ -3,18 +3,32 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gostudy/httpproxy/utils"
+	"httpproxy.v1/utils"
 	"log"
 	"net"
 	"runtime"
 )
 
+const curVersion = "1.0.1"
+const curMode = "server"
+
 func main() {
-	setup(l)
+	utils.Panel(Server{})
 }
 
-func setup(l net.Listener) {
-	l, err := net.Listen("tcp", ":8082")
+type Server struct{}
+
+func (c Server) GetCurVersion() string {
+	return curVersion
+}
+
+func (c Server) GetCurMode() string {
+	return curMode
+}
+
+func (c Server) Setup(address string) {
+
+	l, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -51,7 +65,7 @@ func handleClientRequest(client *utils.ClientConn) (err error) {
 
 	defer func() {
 		if !closed {
-			client.Close()
+			_ = client.Close()
 		}
 	}()
 
@@ -63,7 +77,7 @@ func handleClientRequest(client *utils.ClientConn) (err error) {
 	server = cp.OutputClient
 	defer func() {
 		if !closed {
-			server.Close()
+			_ = server.Close()
 		}
 	}()
 

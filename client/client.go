@@ -3,14 +3,11 @@ package main
 import (
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
-	"gostudy/httpproxy/utils"
-	"httpproxy/config"
+	"httpproxy.v1/utils"
 	"log"
 	"net"
 	"net/url"
-	"os"
 	"runtime"
 	"strings"
 )
@@ -18,35 +15,23 @@ import (
 var established = []byte("HTTP/1.1 200 Connection established\r\n\r\n")
 
 const curVersion = "1.0.1"
+const curMode = "client"
 
 func main() {
-	var (
-		host, port, curMode string
-		timeout             int
-		trace, printVer     bool
-	)
-
-	flag.BoolVar(&printVer, "v", false, "current version")
-	flag.StringVar(&host, "b", "", "iP address for local monitoring")
-	flag.StringVar(&port, "p", "", "port address for local listening")
-	flag.IntVar(&timeout, "t", 1200, "timeout seconds")
-	flag.BoolVar((*bool)(&trace), "d", false, "log input and output")
-	flag.Parse()
-
-	if printVer {
-		fmt.Println("httpproxy version:", curVersion)
-		os.Exit(0)
-	}
-	if port == "" {
-		fmt.Println("port needed !")
-		os.Exit(0)
-	}
-
-	config.InitConfig(curMode)
-	setup(fmt.Sprintf("%s:%s", host, port))
+	utils.Panel(Client{})
 }
 
-func setup(address string) {
+type Client struct {}
+
+func (c Client) GetCurVersion() string {
+	return curVersion
+}
+
+func (c Client) GetCurMode() string {
+	return curMode
+}
+
+func (c Client) Setup(address string) {
 	l, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Panic(err)
