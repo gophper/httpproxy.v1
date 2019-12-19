@@ -7,6 +7,7 @@ import (
 )
 
 var ErrShortWrite = errors.New("short write")
+var EOF = errors.New("EOF")
 
 type ClientConn struct {
 	Conn net.Conn
@@ -16,7 +17,6 @@ type ClientConn struct {
 
 //cryptFlag=1:encode,cryptFlag=2:decode
 func Copy(dstClient, srcClient *ClientConn, cryptFlag int) (written int64, er, ew, err error) {
-	defer dstClient.Close()
 	var (
 		size   = 32 * 1024
 		data   []byte
@@ -28,14 +28,14 @@ func Copy(dstClient, srcClient *ClientConn, cryptFlag int) (written int64, er, e
 		nr, er = srcClient.Read(buf, true)
 		if nr > 0 {
 			if cryptFlag == 1 {
-				data, err = EncryptAES(buf[0:nr], Key)
+				data, err = EncryptAES(buf[0:nr])
 				if err != nil {
-					return
+					break
 				}
 			} else {
-				data, err = DecryptAES(buf[0:nr], Key)
+				data, err = DecryptAES(buf[0:nr])
 				if err != nil {
-					return
+					break
 				}
 			}
 			nr = len(data)
@@ -44,7 +44,6 @@ func Copy(dstClient, srcClient *ClientConn, cryptFlag int) (written int64, er, e
 				written += int64(nw)
 			}
 			if ew != nil {
-				err = ew
 				break
 			}
 			if nr != nw {
@@ -53,9 +52,6 @@ func Copy(dstClient, srcClient *ClientConn, cryptFlag int) (written int64, er, e
 			}
 		}
 		if er != nil {
-			if er != EOF {
-				err = er
-			}
 			break
 		}
 	}

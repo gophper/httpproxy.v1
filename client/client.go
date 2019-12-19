@@ -3,110 +3,120 @@ package main
 import (
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	"gostudy/httpproxy/utils"
+	"httpproxy/config"
 	"log"
 	"net"
 	"net/url"
+	"os"
 	"runtime"
 	"strings"
 )
 
 var established = []byte("HTTP/1.1 200 Connection established\r\n\r\n")
 
+const curVersion = "1.0.1"
+
 func main() {
-	l, err := net.Listen("tcp", ":8083")
+	var (
+		host, port, curMode string
+		timeout             int
+		trace, printVer     bool
+	)
+
+	flag.BoolVar(&printVer, "v", false, "current version")
+	flag.StringVar(&host, "b", "", "iP address for local monitoring")
+	flag.StringVar(&port, "p", "", "port address for local listening")
+	flag.IntVar(&timeout, "t", 1200, "timeout seconds")
+	flag.BoolVar((*bool)(&trace), "d", false, "log input and output")
+	flag.Parse()
+
+	if printVer {
+		fmt.Println("httpproxy version:", curVersion)
+		os.Exit(0)
+	}
+	if port == "" {
+		fmt.Println("port needed !")
+		os.Exit(0)
+	}
+
+	config.InitConfig(curMode)
+	setup(fmt.Sprintf("%s:%s", host, port))
+}
+
+func setup(address string) {
+	l, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Panic(err)
 	}
+
 	for {
 		client, err := l.Accept()
 		if err != nil {
 			log.Panic(err)
 		}
 		log.Println("Received:", client.RemoteAddr())
-		go handleClientRequest(&utils.ClientConn{client, make([]byte, 0), make([]byte, 0)})
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					var buf [2 << 10]byte
+					stack := string(buf[:runtime.Stack(buf[:], true)])
+					log.Println("panic error:", err, "stack:", stack)
+				}
+			}()
+
+			handleClientRequest(&utils.ClientConn{client, make([]byte, 0), make([]byte, 0)})
+		}()
+
 	}
 }
 
 func handleClientRequest(client *utils.ClientConn) {
-	defer func() {
-		if err := recover(); err != nil {
-			var buf [2 << 10]byte
-			stack := string(buf[:runtime.Stack(buf[:], true)])
-			log.Println("panic error:", err, "stack:", stack)
-		}
-	}()
+
 	var (
 		cp     *utils.ClientPair
 		server *utils.ClientConn
 		err    error
+		closed = false
 	)
+	defer func() {
+		if !closed {
+			client.Close()
+		}
+	}()
 
 	cp, err = shakeHands(client)
 	if err != nil {
 		log.Println("Shake with server error", err)
 		return
 	}
-
 	server = cp.OutputClient
-	ch := make(chan struct{}, 2)
+	defer func() {
+		if !closed {
+			server.Close()
+		}
+	}()
 
 	go func() {
-		defer func() {
-			ch <- struct{}{}
-			cp.Info("---------->", "\n", client.Bufr, "\n", server.Bufw, )
-		}()
+		defer server.Close()
 		if _, er, ew, err := utils.Copy(server, client, 1); err != nil {
-			//浏览器客户端已经关闭，如果有往服务端写的数据，必须等写完再关闭所有，但是目前是同步读写，所以不存在这种情况
-			if er != nil {
-				//nothing to do
-			}
-			//服务端异常通道关闭,尝试进行重连
-			if ew != nil {
-				//todo 客户端和服务端通道重连
-			}
-
-			_ = server.Close()
-			_ = client.Close()
-
-			log.Println("client logout", client.RemoteAddr(), "->", server.RemoteAddr())
-			log.Println("client send to server error", er, ew, err)
+			cp.TraceV1("client send to server error", er, ew, err)
 		}
-	}()
-	go func() {
-		defer func() {
-			ch <- struct{}{}
-			cp.Info("<----------", "\n", server.Bufr, "\n", client.Bufw)
-		}()
-
-		if _, er, ew, err := utils.Copy(client, server, 2); err != nil {
-
-			//服务端通道异常关闭，如果客户端正在往浏览器写数据，则等待写完成再关闭客户端对浏览器的通道。
-			// 如果客户端正在读取浏览器的数据，则进行重连（todo），暂时改为关闭所有通道，并抛出醒目错误
-			if er != nil {
-				server.Close()
-				client.Close()
-			}
-			//客户端通道异常关闭，如果有正在往服务端写数据，则等待写完再关闭；
-			// 如果有从服务端读则关闭私有云通道，并抛出醒目错误
-			if ew != nil {
-				//todo 客户端和服务端通道重连
-			}
-
-			log.Println("server logout", client.RemoteAddr(), "->", server.RemoteAddr())
-			log.Println("server return to client error", err)
-		}
+		cp.TraceV1("sended", client.Bufr, server.Bufw, "client logout")
 	}()
 
-	<-ch
-	cp.Info("both close")
-	defer server.Close()
-	defer client.Close()
+	if _, er, ew, err := utils.Copy(client, server, 2); err != nil {
+		cp.TraceV1("server return to client error:", er, ew, err)
+	}
+	cp.TraceV1("received", server.Bufr, client.Bufw, "server logout,both close")
+	client.Close()
+	closed = true
+
 }
 
 func parseHost(data []byte) (address, method string, err error) {
-
 	var (
 		host string
 	)
@@ -135,7 +145,10 @@ func parseHost(data []byte) (address, method string, err error) {
 
 //Initiate a handshake request
 func shakeHands(client *utils.ClientConn) (cp *utils.ClientPair, err error) {
-	var head [1024]byte
+	var (
+		head     [1024]byte
+		ackBytes [1024]byte
+	)
 	n, err := client.Read(head[:], false)
 	if err != nil || n == 0 {
 		return nil, errors.New(fmt.Sprintf("Read http head error:%v,readed:%v", err, n))
@@ -147,7 +160,7 @@ func shakeHands(client *utils.ClientConn) (cp *utils.ClientPair, err error) {
 		return nil, errors.New(fmt.Sprint("Connect server error:", err))
 	}
 
-	encryptData, err := utils.EncryptAES([]byte(address), utils.Key)
+	encryptData, err := utils.EncryptAES([]byte(address))
 	if err != nil {
 		return nil, errors.New(fmt.Sprint("Encode data error:", err))
 	}
@@ -157,7 +170,6 @@ func shakeHands(client *utils.ClientConn) (cp *utils.ClientPair, err error) {
 		return nil, errors.New(fmt.Sprint("Send head to server error:", err))
 	}
 
-	var ackBytes [1024]byte
 	n, err = server.Read(ackBytes[:], false)
 	if err != nil || n == 0 {
 		return nil, errors.New(fmt.Sprintf("Read ack error:%v,readed:%v", err, n))

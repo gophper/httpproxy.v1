@@ -12,7 +12,7 @@ var keyStock []byte
 var valStock = make([]byte,256)
 
 func init() {
-	encodeString, err := ReadFile_v1("E:\\work\\code\\go\\src\\gostudy\\httpproxy\\utils\\test.txt")
+	encodeString, err := ReadFile_v1("E:\\code\\go\\src\\gostudy\\httpproxy\\utils\\test.txt")
 
 	// 对上面的编码结果进行base64解码
 	keyStock, err = base64.StdEncoding.DecodeString(string(encodeString))
@@ -22,20 +22,18 @@ func init() {
 	for key, value := range keyStock {
 		valStock[value] = byte(key)
 	}
-	//fmt.Println(keyStock)
-	//fmt.Println(valStock)
 }
 
-func EncryptAES(src []byte, key []byte) ([]byte, error) {
-	return src, nil
+func EncryptAES(src []byte) ([]byte, error) {
+	//return src, nil
 	for key, value := range src {
 		src[key] = keyStock[value]
 	}
 	return src, nil
 }
 
-func DecryptAES(src []byte, key []byte) (dst []byte, err error) {
-	return src, nil
+func DecryptAES(src []byte) (dst []byte, err error) {
+	//return src, nil
 	for key, value := range src {
 		src[key] = valStock[value]
 	}
