@@ -11,19 +11,14 @@ import (
 
 func TestBase64(t *testing.T) {
 	input := []byte("hello world")
-
-	// 演示base64编码
 	encodeString := base64.StdEncoding.EncodeToString(input)
 	fmt.Println(encodeString)
-
 	// 对上面的编码结果进行base64解码
 	decodeBytes, err := base64.StdEncoding.DecodeString(encodeString)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println(string(decodeBytes))
-
-	fmt.Println("///////////////////////////////")
 
 	// 如果要用在url中，需要使用URLEncoding
 	uEnc := base64.URLEncoding.EncodeToString([]byte(input))
@@ -36,21 +31,21 @@ func TestBase64(t *testing.T) {
 	fmt.Println(string(uDec))
 }
 
-func TestAES(t *testing.T) {
-	d := []byte("hello,ase")
-	key := []byte("hgfedcba87654321")
-	fmt.Println("加密前:", string(d))
-	x1, err := EncryptAES(d, key)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println("加后密:", string(x1))
-	x2, err := DecryptAES(x1, key)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println("解密后:", string(x2))
-}
+//func TestAES(t *testing.T) {
+//	d := []byte("hello,ase")
+//	key := []byte("hgfedcba87654321")
+//	fmt.Println("加密前:", string(d))
+//	x1, err := EncryptAES(d, key)
+//	if err != nil {
+//		log.Fatalln(err)
+//	}
+//	fmt.Println("加后密:", string(x1))
+//	x2, err := DecryptAES(x1, key)
+//	if err != nil {
+//		log.Fatalln(err)
+//	}
+//	fmt.Println("解密后:", string(x2))
+//}
 
 func TestJm(t *testing.T) {
 	s := make([]int, 256)
@@ -79,10 +74,10 @@ func TestJm(t *testing.T) {
 func TestFunc2(t *testing.T) {
 
 	s1, _ := ReadFile_v1("./data.txt")
-	a, _ := EncryptAES([]byte(s1), []byte{})
+	a, _ := EncryptAES([]byte(s1))
 	fmt.Println(a)
 
-	b, _ := DecryptAES(a, []byte{})
+	b, _ := DecryptAES(a)
 	fmt.Println(string(b))
 }
 

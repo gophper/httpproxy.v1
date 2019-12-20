@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"gostudy/github.com/name5566/leaf/log"
+	"httpproxy.v1/config"
 	"os"
 	"strings"
 	"time"
@@ -13,7 +13,11 @@ type ClientPair struct {
 	OutputClient *ClientConn
 }
 
-var filePath = "E:\\code\\go\\src\\gostudy\\httpproxy\\logs\\"
+var filePath string
+
+func init() {
+	filePath = config.GetConfig("sys", "logDir")
+}
 
 func (c ClientPair) TraceV1(args ...interface{}) {
 	fileName := strings.Replace(fmt.Sprintf("%s-%s-client", c.OutputClient.Conn.LocalAddr(), c.InputClient.Conn.RemoteAddr()), ":", "", -1)
@@ -46,6 +50,6 @@ func (c ClientPair) traceFile(fileName string, args ...interface{}) {
 	fd_time := time.Now().Format("2006-01-02 15:04:05==>");
 	_, err = fmt.Fprintf(fileObj, fd_time+content)
 	if err != nil {
-		log.Error("error", err)
+		fmt.Println("error:", err)
 	}
 }

@@ -3,16 +3,17 @@ package utils
 import (
 	"encoding/base64"
 	"fmt"
+	"httpproxy.v1/config"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
 var keyStock []byte
-var valStock = make([]byte,256)
+var valStock = make([]byte, 256)
 
 func init() {
-	encodeString, err := ReadFile_v1("E:\\code\\go\\src\\gostudy\\httpproxy\\utils\\test.txt")
+	encodeString, err := ReadFile_v1(config.GetConfig("sys", "key"))
 
 	// 对上面的编码结果进行base64解码
 	keyStock, err = base64.StdEncoding.DecodeString(string(encodeString))
