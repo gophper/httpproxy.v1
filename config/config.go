@@ -13,8 +13,10 @@ var (
 	configData []map[string]map[string]string
 )
 
-func InitConfig(curMode string) {
-	var fileName = fmt.Sprintf("./conf/%s.ini", curMode)
+func InitConfig(curMode, fileName string) {
+	if fileName == "" {
+		fileName = fmt.Sprintf("../conf/%s.ini", curMode)
+	}
 	if _, err := os.Stat(fileName); err != nil {
 		if os.IsNotExist(err) {
 			panic("configuration file " + fileName + " is not exist")

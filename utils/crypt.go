@@ -2,46 +2,60 @@ package utils
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"httpproxy.v1/config"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
-var keyStock []byte
-var valStock = make([]byte, 256)
+var ErrEmptyKey = errors.New("short write")
+var keyStock = make(map[byte]byte, 256)
+var valStock = make(map[byte]byte, 256)
 
-func init() {
-	encodeString, err := ReadFile_v1(config.GetConfig("sys", "key"))
-
-	// 对上面的编码结果进行base64解码
-	keyStock, err = base64.StdEncoding.DecodeString(string(encodeString))
+func initCrypt() error {
+	encodeString := config.GetConfig("sys", "key")
+	if encodeString == "" {
+		return ErrEmptyKey
+	}
+	kss, err := base64.StdEncoding.DecodeString(string(encodeString))
 	if err != nil {
-		log.Fatalln(err)
+		return err
+	}
+	for key, value := range kss {
+		keyStock[byte(key)] = value
 	}
 	for key, value := range keyStock {
 		valStock[value] = byte(key)
 	}
+	return nil
 }
 
 func EncryptAES(src []byte) ([]byte, error) {
-	//return src, nil
+	var ok bool
 	for key, value := range src {
-		src[key] = keyStock[value]
+		src[key], ok = keyStock[value]
+		if !ok {
+			fmt.Println(keyStock, value, key)
+			panic("encode key not found")
+		}
 	}
 	return src, nil
 }
 
 func DecryptAES(src []byte) (dst []byte, err error) {
-	//return src, nil
+	var ok bool
 	for key, value := range src {
-		src[key] = valStock[value]
+		src[key], ok = valStock[value]
+		if !ok {
+			fmt.Println(valStock, value, key)
+			panic("decode key not found")
+		}
 	}
 	return src, nil
 }
 
-func ReadFile_v1(filename string) (content []byte, err error) {
+func ReadFile(filename string) (content []byte, err error) {
 	fileObj, err := os.Open(filename)
 	if err != nil {
 		fmt.Println("os open error:", err)
