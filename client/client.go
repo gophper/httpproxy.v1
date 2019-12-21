@@ -21,7 +21,7 @@ func main() {
 	utils.Panel(Client{})
 }
 
-type Client struct {}
+type Client struct{}
 
 func (c Client) GetCurVersion() string {
 	return curVersion
@@ -171,6 +171,6 @@ func shakeHands(client *utils.ClientConn) (cp *utils.ClientPair, err error) {
 		return nil, errors.New(fmt.Sprint("Receive ack message error:", string(ackBytes[0:n])))
 	}
 
-	return &utils.ClientPair{client, server,}, nil
+	return &utils.ClientPair{client, server}, nil
 
 }

@@ -15,19 +15,27 @@ type ProxyProcesser interface {
 
 func Panel(c ProxyProcesser) {
 	var (
-		host, port string
-		printVer   bool
+		host, port, confFile string
+		printVer             bool
 	)
-	config.InitConfig(c.GetCurMode())
+
 	flag.BoolVar(&printVer, "v", false, "current version")
-	flag.StringVar(&host, "b", "", "iP address for local monitoring")
+	flag.StringVar(&confFile, "c", "", "config file")
+	flag.StringVar(&host, "b", "", "ip address for local monitoring")
 	flag.StringVar(&port, "p", "", "port address for local listening")
 	flag.IntVar(&config.Timeout, "t", 0, "timeout seconds")
 	flag.BoolVar((*bool)(&config.Trace), "d", false, "log input and output")
 	flag.Parse()
 
 	if printVer {
-		fmt.Println("httpproxy version:", c.GetCurVersion())
+		fmt.Printf("httpproxy version:", c.GetCurVersion())
+		os.Exit(0)
+	}
+
+	config.InitConfig(c.GetCurMode(), confFile)
+
+	if err := initCrypt(); err != nil {
+		fmt.Printf("init crypt module faild:%v", err)
 		os.Exit(0)
 	}
 
@@ -39,6 +47,7 @@ func Panel(c ProxyProcesser) {
 			os.Exit(0)
 		}
 	}
+	fmt.Printf("listen in:%v", port)
 
 	if host == "" {
 		if h := config.GetConfig("sys", "host"); h != "" {
