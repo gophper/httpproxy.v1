@@ -17,7 +17,7 @@ func Client2Server(server, client *utils.ClientConn) (er, ew, err error) {
 	var (
 		waitWritten []byte
 	)
-copystart:
+start:
 	if waitWritten, er, ew, err = csCopy(server, client, waitWritten); err != nil {
 		if err == utils.ErrRebuild {
 			if reconect > reconectLimist {
@@ -30,7 +30,7 @@ copystart:
 			}
 			fmt.Println("reconnected with server:", config.ServerHost)
 			server.Conn = sc
-			goto copystart
+			goto start
 		}
 	}
 	return er, ew, err
