@@ -23,6 +23,7 @@ func Panel(c ProxyProcesser) {
 	flag.StringVar(&confFile, "c", "", "config file")
 	flag.StringVar(&host, "b", "", "ip address for local monitoring")
 	flag.StringVar(&port, "p", "", "port address for local listening")
+	flag.StringVar(&config.ServerHost, "r", "", "server host address")
 	flag.IntVar(&config.Timeout, "t", 0, "timeout seconds")
 	flag.BoolVar((*bool)(&config.Trace), "d", false, "log input and output")
 	flag.Parse()
@@ -52,6 +53,12 @@ func Panel(c ProxyProcesser) {
 	if host == "" {
 		if h := config.GetConfig("sys", "host"); h != "" {
 			host = h
+		}
+	}
+
+	if config.ServerHost == "" {
+		if h := config.GetConfig("server", "host"); h != "" {
+			config.ServerHost = h
 		}
 	}
 

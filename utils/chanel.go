@@ -6,8 +6,11 @@ import (
 	"net"
 )
 
-var ErrShortWrite = errors.New("short write")
-var EOF = errors.New("EOF")
+var (
+	ErrShortWrite = errors.New("short write")
+	ErrRebuild    = errors.New("rebuild")
+	EOF           = errors.New("EOF")
+)
 
 type ClientConn struct {
 	Conn net.Conn
@@ -15,10 +18,14 @@ type ClientConn struct {
 	Bufr []byte
 }
 
+func NewClientConn(conn net.Conn) *ClientConn {
+	return &ClientConn{conn, make([]byte, 0), make([]byte, 0)}
+}
+
 //cryptFlag=1:encode,cryptFlag=2:decode
 func Copy(dstClient, srcClient *ClientConn, cryptFlag int) (written int64, er, ew, err error) {
 	var (
-		size   = 32 * 1024
+		size   = 100
 		data   []byte
 		nr, nw int
 	)

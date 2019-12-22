@@ -10,6 +10,7 @@ import (
 var (
 	Timeout    int
 	Trace      bool
+	ServerHost string
 	configData []map[string]map[string]string
 )
 

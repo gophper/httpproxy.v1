@@ -8,11 +8,6 @@ import (
 	"time"
 )
 
-type ClientPair struct {
-	InputClient  *ClientConn
-	OutputClient *ClientConn
-}
-
 var filePath string
 
 func init() {
