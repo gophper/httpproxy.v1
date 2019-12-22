@@ -39,7 +39,9 @@ func handleClientRequest(socket net.Conn) (err error) {
 		if _, er, ew, err := utils.Copy(remote, server, 2); er != nil || ew != nil || err != nil {
 			log.Println("server to remote error:", er, ew, err)
 			if er != nil && er != utils.EOF {
-				utils.DelayUnsetPair(cp) //如果客户端和服务端非EOF断开，则延迟关闭remote，等待新server和remote关联
+				//if the client and server are not EOF disconnected, the remote will be delayed to closed  ,
+				// waiting for the new server to be associated with remote
+				utils.DelayUnsetPair(cp)
 				delayed = true
 				log.Println("server exception:", er)
 				return

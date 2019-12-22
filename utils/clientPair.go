@@ -55,6 +55,8 @@ func UnsetPair(connectId int64) {
 	return
 }
 
+//if the client and server are not EOF disconnected, the remote will be delayed to closed  ,
+// waiting for the new server to be associated with remote
 func DelayUnsetPair(cp ClientPair) {
 	cp.Expire = time.Now()
 	cpmp[cp.ConnectId] = cp

@@ -42,6 +42,5 @@ func (c Client) Setup(address string) {
 
 			handleClientRequest(socket)
 		}()
-
 	}
 }
