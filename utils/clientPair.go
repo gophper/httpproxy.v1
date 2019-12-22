@@ -15,7 +15,7 @@ type ClientPair struct {
 }
 
 func NewClientPair(cs, ss net.Conn, connectId int64) ClientPair {
-	return ClientPair{NewClientConn(cs), NewClientConn(ss), connectId, nil}
+	return ClientPair{InputClient: NewClientConn(cs), OutputClient: NewClientConn(ss), ConnectId: connectId}
 }
 
 func init() {
